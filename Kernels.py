@@ -11,15 +11,18 @@
 
 # In[1]:
 
-
+# Import required packages
 import pandas as pd
 import numpy as np
 from decimal import Decimal
+from scipy.signal import convolve2d
 
 
 # In[2]:
 
-
+# convolve2d from scipy.signal also can be employed (it's used in 'bilinear' method)
+# this function performs convolution on window size 3*3 though, in order to get new 
+# value of a particular pixel
 def convolve(img, kernel):
     img_np = np.array(img)
     kernel_np = np.array(kernel)
@@ -27,11 +30,24 @@ def convolve(img, kernel):
     return res
 
 
+# Bilinear interpolation
+# Upscaling
+
+def bilinear(img, k, scale_factor):
+    # Convert the input lists to numpy arrays
+    image = np.array(img)
+    kernel = np.array(k)
+    # First get the Nearest Neighbor Interpolation
+    upscaled = np.repeat(np.repeat(image, scale_factor, axis=0), scale_factor, axis=1)
+    # Apply Bilinear
+    new_image = convolve2d(upscaled, kernel)/4
+
+    print(new_image[1:, 1:])
 # In[3]:
 
-
+# 1-pixel, 3-pixel, 5-pixel median smoothing filter
+# This fliter comes in handy when dealing with salt and pepper noise
 def median_smoothing(img):
-    #img = [12,22,15,12,17,22,13,33,24]
     img.sort()
     mid_index = int(len(img)/2)
     one_pixel = img[mid_index]
@@ -44,12 +60,16 @@ def median_smoothing(img):
 
 # In[4]:
 
-
+# Can be used for weighted and unweighted mean smoothing filter
+# In case of unweighted, functions takes 1 as its second argument
+# 'weight' is the weight of noise
 def mean_smoothing(img, weight):
     sum_ = 0
     for item in range(len(img)):
         sum_ += img[item]
     noise = int(sum_/(weight+8))+1
+    
+    # Work out the values of neighboring pixels 
     other_pixels = int((sum_-noise)/8)+1
     print(f" noise = {noise}")
     print(f"others = {other_pixels}")
@@ -70,6 +90,7 @@ def gamma(pix, g):
 # In[6]:
 
 
+# Can also be used for Prewitt
 def sobel(img, x_kernel, y_kernel):
     res_x = convolve(img, x_kernel)
     res_y = convolve(img, y_kernel)
@@ -86,7 +107,7 @@ def sobel(img, x_kernel, y_kernel):
 
 # In[7]:
 
-
+# Second order edge detection kernel
 def laplacian(img, kernel):
     pix = convolve(img, kernel)
     #Truncation
@@ -102,7 +123,10 @@ def laplacian(img, kernel):
 
 
 def contrast(pixel, c):
+    #Calculate the factor
     f = (259*(c+255))/(255*(255-c))
+    
+    # Find the value of the contrasted pixel
     pix = round(f*(pixel - 128)+128)
     #Truncation
     if pix > 255:
@@ -114,7 +138,9 @@ def contrast(pixel, c):
 
 # In[9]:
 
-
+# If the sharpen kernel was already given, the 3rd input argument would be 'True'
+# otherwise, False; so that the edge detection kernel given, can be subtracted from
+# the identity kernel
 def sharpen(img, kernel, given):
     id_k = [0,0,0,0,1,0,0,0,0]
     identity_kernel = np.array(id_k)
@@ -135,7 +161,8 @@ def sharpen(img, kernel, given):
 
 # In[10]:
 
-
+# Calculate x_bar, A, A_transposed and finally the covariance matrix 
+# This is used in PCA algorithm and is equal to A_transpposed * A
 def cov_mat(x):
     x_ = np.array(x)
     x_bar = []
@@ -181,18 +208,7 @@ def projection_space(face_space, A_mat):
 # In[14]:
 
 
-from scipy.signal import convolve2d
 
-def bilinear(img, k, scale_factor):
-    # Convert the input lists to numpy arrays
-    image = np.array(img)
-    kernel = np.array(k)
-    # First get the Nearest Neighbor Interpolation
-    upscaled = np.repeat(np.repeat(image, scale_factor, axis=0), scale_factor, axis=1)
-    # Apply Bilinear
-    new_image = convolve2d(upscaled, kernel)/4
-
-    print(new_image[1:, 1:])
 
 
 # In[21]:
